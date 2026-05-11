@@ -1,104 +1,155 @@
-# TP DevOps - Ansible
+# TP DevOps S8 - Ansible
 
-Projet d'exemple pour la prise en main d'Ansible dans un contexte DevOps.
-Il illustre le déploiement automatisé d'une stack applicative (base de données, serveur API, reverse proxy Nginx) à l'aide de playbooks Ansible et de l'outil de test Molecule.
+Projet de deploiement Ansible pour le TP2 DevOps S8.
+Le depot automatise l'installation d'une petite application web Python, d'une base PostgreSQL et d'un reverse proxy nginx.
 
-## Prérequis
+## Application deployee
 
-Avant de commencer, assurez-vous d'avoir installé les outils suivants sur votre machine :
+L'application choisie est `DevOps Quote API`, une API HTTP minimaliste ecrite avec Flask.
+Elle expose :
 
-- [Python 3.12](https://www.python.org/download/)
-  ```bash
-  sudo apt-get install python3 python3-pip
-  sudo pip3 install virtualenv
-  ```
-- [VirtualBox](https://www.virtualbox.org/)
-- [Vagrant](https://www.vagrantup.com/)
+- `/` pour afficher un message de presentation et le nombre de citations en base
+- `/health` pour verifier que l'application repond
+- `/db-health` pour verifier la connexion PostgreSQL
 
-## Mise en place de l'environnement local
+L'application est lancee via `gunicorn` comme service systemd, puis exposee par `nginx`.
 
-Ce projet utilise un environnement virtuel Python pour isoler les dépendances. Pour l'initialiser, exécutez depuis la racine du projet :
+## Membres
 
-```bash
-source venv.sh
-```
+- A completer
 
-Cette commande crée l'environnement virtuel, l'active et installe toutes les dépendances Python nécessaires (Ansible, Molecule, etc.).
+## Bonus implementes
 
-Des fonctions utilitaires sont ensuite disponibles dans le terminal :
-- `download_galaxy` — télécharge les rôles Ansible déclarés dans `roles/requirements.yml`
-- `rebuild_env` — recrée l'environnement virtuel from scratch
-- `deactivate` — quitte l'environnement virtuel
-
-## Développement et tests avec Molecule
-
-Ce projet intègre [Molecule](https://molecule.readthedocs.io/en/stable/) pour tester les rôles Ansible dans des machines virtuelles éphémères.
-
-| Commande | Description |
-|---|---|
-| `molecule converge` | Crée la VM de test et applique les playbooks |
-| `molecule login` | Se connecte en SSH à la machine de test |
-| `molecule verify` | Exécute les tests de vérification |
-| `molecule test` | Lance le cycle de test complet (create → converge → verify → destroy) |
-
-> Avant tout commit, vérifiez que tous les tests passent avec `molecule test`.
+- Aucun pour le moment
 
 ## Structure du projet
 
-```
+```text
 .
-├── hosts/              # Inventaires (machines cibles)
-│   └── hosts_dev       # Inventaire de développement (utilisé par Molecule)
-├── group_vars/         # Variables par groupe d'hôtes
+├── ansible.cfg
+├── collections/
+│   └── requirements.yml
+├── group_vars/
 │   ├── all.yml
 │   ├── api.yml
-│   └── database.yml
-├── roles/              # Rôles Ansible locaux
+│   ├── database.yml
+│   └── devops_dev/
+│       └── vars.yml
+├── hosts/
+│   └── hosts_dev
+├── molecule/
+│   └── default/
+├── playbook_install.yml
+├── roles/
+│   ├── app/
+│   ├── database/
+│   ├── runtime/
+│   ├── webserver/
 │   └── requirements.yml
-├── molecule/           # Configuration des tests Molecule
-├── playbook_install.yml # Playbook principal de déploiement
-└── venv.sh             # Script d'initialisation de l'environnement
+└── venv.sh
 ```
 
-## Déploiement
+## Roles implementes
 
-### 1. Activer l'environnement virtuel
+- `runtime` : installe Python, `pip` et `venv`
+- `database` : installe PostgreSQL, cree l'utilisateur et la base applicative
+- `app` : deploie le code Flask, installe les dependances Python, genere le fichier d'environnement et le service systemd
+- `webserver` : installe nginx et genere la configuration de reverse proxy depuis un template Jinja2
+
+## Mise en place locale
+
+### 1. Activer l'environnement Python
 
 ```bash
 source venv.sh
 ```
 
-### 2. Télécharger les rôles Galaxy
+Le script gere maintenant aussi les chemins avec espaces et retombe sur `python3 -m venv` si `virtualenv` n'est pas installe.
+
+### 2. Installer les roles et collections Galaxy
 
 ```bash
 download_galaxy
 ```
 
-### 3. Configurer le vault Ansible
-
-Certaines variables sont chiffrées avec [Ansible Vault](https://docs.ansible.com/ansible/latest/user_guide/vault.html).
-Créez un fichier `.devops_vault_pass.txt` à la racine du projet contenant le mot de passe du vault.
-
-Pour ce projet d'exemple, le mot de passe est : `password`
-
-> **Attention :** Ne poussez jamais ce fichier sur un dépôt distant. Ajoutez-le à votre `.gitignore`.
-
-### 4. Lancer le playbook
-
-Voici la commande pour lancer le playbook si une vrai machine est configuré (ce qui n'est pas le cas pour ce TP).
-```bash
-ansible-playbook -i hosts/hosts_dev -u devops playbook_install.yml
-```
-
-## Gestion des vaults
+### 3. Lancer un test de syntaxe
 
 ```bash
-# Créer un nouveau vault
-ansible-vault create group_vars/devops_dev/vault.yml
-
-# Editer un vault existant
-ansible-vault edit group_vars/devops_dev/vault.yml
-
-# Consulter un vault
-ansible-vault view group_vars/devops_dev/vault.yml
+ansible-playbook -i hosts/hosts_dev playbook_install.yml --syntax-check
 ```
+
+### 4. Lancer les linters
+
+```bash
+ansible-lint -c .ansible-lint.yml
+flake8
+```
+
+## Tests Molecule
+
+Commandes utiles :
+
+```bash
+molecule create
+molecule converge
+molecule verify
+molecule test
+```
+
+Le scenario Molecule utilise Vagrant + VirtualBox et l'inventaire `hosts/hosts_dev`.
+
+## Deploiement manuel de l'application seule
+
+Pour lancer l'application manuellement hors Ansible :
+
+1. Installer PostgreSQL et creer une base `devops_quotes` avec un utilisateur `devops_api`.
+2. Installer les dependances Python :
+
+```bash
+python3 -m venv .tmp-app-venv
+source .tmp-app-venv/bin/activate
+pip install -r roles/app/files/devops_api/requirements.txt
+```
+
+3. Exporter les variables d'environnement :
+
+```bash
+export APP_NAME=devops_quote_api
+export APP_MESSAGE="API de demonstration deployee avec Ansible"
+export APP_QUOTE_SEED="Infrastructure as code, livree proprement."
+export DATABASE_URL="postgresql://devops_api:devops_api_password@127.0.0.1:5432/devops_quotes"
+```
+
+4. Demarrer l'application :
+
+```bash
+python roles/app/files/devops_api/app.py
+```
+
+L'application ecoutera alors sur `127.0.0.1:5000`.
+
+## Variables principales
+
+Les variables du projet sont centralisees dans `group_vars/` :
+
+- `group_vars/all.yml` : nom de l'application, ports, chemins, identifiants de base
+- `group_vars/api.yml` : endpoints de verification
+- `group_vars/database.yml` : paquets PostgreSQL
+- `group_vars/devops_dev/vars.yml` : surcharge specifique a l'environnement de test
+
+## Etat actuel
+
+Le projet couvre le travail obligatoire suivant :
+
+- runtime Python
+- deploiement applicatif
+- base de donnees PostgreSQL
+- template Jinja2 pour nginx
+- tests Testinfra/Molecule pour nginx, l'API et la base
+- verification `ansible-lint`, `flake8` et `--syntax-check`
+
+## Remarques
+
+- Aucun secret n'est chiffre avec Ansible Vault pour l'instant
+- Si VirtualBox est installe mais que les VMs ne demarrent pas, il peut etre necessaire de recharger le module noyau avec `sudo /sbin/vboxconfig`
+- Si `vagrant` n'est pas installe, `molecule test` ne pourra pas lancer la VM de test

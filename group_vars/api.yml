@@ -1,3 +1,5 @@
 ---
 
-# Configuration dédiée au groupe de l'API
+# Configuration dediee au groupe de l'API
+api_healthcheck_path: "/health"
+api_database_healthcheck_path: "/db-health"

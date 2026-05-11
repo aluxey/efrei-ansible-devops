@@ -1,0 +1,47 @@
+---
+
+- name: Install nginx package
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Disable default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Reload nginx
+
+- name: Remove default nginx site definition
+  ansible.builtin.file:
+    path: /etc/nginx/sites-available/default
+    state: absent
+  notify: Reload nginx
+
+- name: Install nginx vhost for the application
+  ansible.builtin.template:
+    src: app.conf.j2
+    dest: "/etc/nginx/sites-available/{{ nginx_site_name }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Enable nginx vhost for the application
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ nginx_site_name }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ nginx_site_name }}.conf"
+    state: link
+    force: true
+  notify: Reload nginx
+
+- name: Validate nginx configuration
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+- name: Ensure nginx service is enabled and started
+  ansible.builtin.systemd_service:
+    name: nginx
+    state: started
+    enabled: true

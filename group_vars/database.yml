@@ -1,3 +1,7 @@
 ---
 
-# Configuration dédiée au groupe de la BDD
+# Configuration dediee au groupe de la BDD
+database_packages:
+  - postgresql
+  - postgresql-contrib
+  - python3-psycopg2

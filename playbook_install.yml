@@ -1,15 +1,20 @@
 ---
 
-- name: Installation de la base de données mysql
+- name: Configure PostgreSQL database
   hosts: database
   become: true
+  roles:
+    - role: database
 
-- name: Install applicative server
+- name: Configure application runtime and API
   hosts: api
   become: true
+  roles:
+    - role: runtime
+    - role: app
 
-- name: Installation de nginx
+- name: Configure nginx reverse proxy
   hosts: nginx
   become: true
   roles:
-    - { role: geerlingguy.nginx, tags: [ "nginx" ] }
+    - role: webserver

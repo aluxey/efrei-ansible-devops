@@ -1,0 +1,37 @@
+---
+
+- name: Install PostgreSQL packages
+  ansible.builtin.apt:
+    name: "{{ database_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure PostgreSQL service is enabled and started
+  ansible.builtin.systemd_service:
+    name: postgresql
+    state: started
+    enabled: true
+
+- name: Ensure application database user exists
+  become: true
+  become_user: postgres
+  no_log: true
+  community.postgresql.postgresql_user:
+    login_db: postgres
+    login_unix_socket: /var/run/postgresql
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    role_attr_flags: LOGIN
+    state: present
+
+- name: Ensure application database exists
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    encoding: "UTF8"
+    login_db: postgres
+    login_unix_socket: /var/run/postgresql
+    name: "{{ db_name }}"
+    owner: "{{ db_user }}"
+    state: present

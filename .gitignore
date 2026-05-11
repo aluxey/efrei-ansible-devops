@@ -1,5 +1,13 @@
 roles/*
 !roles/requirements.yml
+!roles/runtime/
+!roles/runtime/**
+!roles/app/
+!roles/app/**
+!roles/database/
+!roles/database/**
+!roles/webserver/
+!roles/webserver/**
 .vagrant
 *.retry
 .virtualenv

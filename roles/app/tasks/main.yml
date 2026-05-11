@@ -1,0 +1,75 @@
+---
+
+- name: Ensure application group exists
+  ansible.builtin.group:
+    name: "{{ app_group }}"
+    system: true
+
+- name: Ensure application user exists
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    group: "{{ app_group }}"
+    create_home: false
+    home: "{{ app_dir }}"
+    shell: /usr/sbin/nologin
+    system: true
+
+- name: Ensure application directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0755"
+  loop:
+    - "{{ app_dir }}"
+    - "{{ app_src_dir }}"
+    - "{{ app_config_dir }}"
+
+- name: Copy application source code
+  ansible.builtin.copy:
+    src: devops_api/
+    dest: "{{ app_src_dir }}/"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0644"
+    directory_mode: "0755"
+  notify: Restart application
+
+- name: Install application dependencies
+  become: true
+  become_user: "{{ app_user }}"
+  ansible.builtin.pip:
+    requirements: "{{ app_src_dir }}/requirements.txt"
+    virtualenv: "{{ app_venv_dir }}"
+    virtualenv_command: python3 -m venv
+  notify: Restart application
+
+- name: Render application environment file
+  ansible.builtin.template:
+    src: app.env.j2
+    dest: "{{ app_config_dir }}/{{ app_name }}.env"
+    owner: root
+    group: "{{ app_group }}"
+    mode: "0640"
+  notify: Restart application
+
+- name: Install application systemd unit
+  ansible.builtin.template:
+    src: app.service.j2
+    dest: "/etc/systemd/system/{{ app_service_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart application
+
+- name: Apply application handlers before service checks
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure application service is enabled and started
+  ansible.builtin.systemd_service:
+    name: "{{ app_service_name }}"
+    state: started
+    enabled: true

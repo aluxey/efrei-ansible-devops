@@ -3,13 +3,18 @@
 prerun: false
 dependency:
   name: galaxy
-  options:
-    role-file: roles/requirements.yml
-    requirements-file: collections/requirements.yml
 driver:
   name: vagrant
   provider:
     name: virtualbox
+  provision: true
+ansible:
+  env:
+    ANSIBLE_CONFIG: ../../ansible.cfg
+    ANSIBLE_LIBRARY: ${MOLECULE_VAGRANT_MODULE_PATH}
+    VAGRANT_DEFAULT_PROVIDER: virtualbox
+  playbooks:
+    converge: ../../playbook_install.yml
 lint: |
   set -e
   export ANSIBLE_ROLES_PATH=${MOLECULE_EPHEMERAL_DIRECTORY}/roles
@@ -28,18 +33,12 @@ platforms:
       - "vm.provision 'shell', inline: 'locale-gen fr_FR'"
       - "vm.provision 'shell', inline: 'locale-gen fr_FR.UTF-8'"
       - "vm.provision 'shell', inline: 'update-locale'"
-    provision: true
 provisioner:
   name: ansible
-  env:
-    ANSIBLE_CONFIG: ../../ansible.cfg
-    ANSIBLE_LIBRARY: "${VIRTUAL_ENV}/lib/python3.12/site-packages/molecule_vagrant/modules"
   inventory:
     links:
       hosts: ../../hosts/hosts_dev
       group_vars: ../../group_vars/
-  playbooks:
-    converge: ../../playbook_install.yml
 scenario:
   name: default
 verifier:

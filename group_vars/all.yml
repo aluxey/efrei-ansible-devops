@@ -1,41 +1,29 @@
 ---
 
-# Configuration global au projet
+# Variables globales du projet
+project_name: "DevOps Quote API"
 
-# NGINX - configuration  du rôle https://github.com/geerlingguy/ansible-role-nginx
-nginx_remove_default_vhost: true
-nginx_worker_processes: "{{ ansible_processor_vcpus | default(ansible_processor_count) }}"
-nginx_worker_connections: "2048"
-nginx_sendfile: "on"
-nginx_tcp_nopush: "on"
-nginx_tcp_nodelay: "on"
-nginx_keepalive_timeout: "5"
-nginx_server_tokens: "off"
-nginx_extra_conf_options: |
-  worker_rlimit_nofile 65000;
-nginx_extra_http_options: |
-  add_header X-Frame-Options SAMEORIGIN;
-  add_header X-Content-Type-Options nosniff;
-  add_header X-XSS-Protection "1; mode=block";
-  log_format upstream_time '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" rt=$request_time uct="$upstream_connect_time" uht="$upstream_header_time" urt="$upstream_response_time"';
-  proxy_cache_path /var/cache/nginx_cache levels=1:2 keys_zone=diskcache:50m inactive=45m max_size=10g;
-  types_hash_max_size 2048;
-  proxy_pass_header X-Accel-Expires;
-  expires -1;
-  server {
-    listen  80 default_server;
-    return 444;
-  }
+app_name: "devops_quote_api"
+app_user: "devopsapp"
+app_group: "{{ app_user }}"
+app_dir: "/opt/{{ app_name }}"
+app_src_dir: "{{ app_dir }}/current"
+app_venv_dir: "{{ app_dir }}/venv"
+app_config_dir: "/etc/{{ app_name }}"
+app_service_name: "{{ app_name }}"
+app_bind_host: "127.0.0.1"
+app_port: 5000
+app_public_port: 80
+app_gunicorn_workers: 2
+app_message: "API de demonstration deployee avec Ansible"
+app_quote_seed: "Infrastructure as code, livree proprement."
 
-nginx_vhosts_base:
-  - listen: "8080"
-    server_name: "localhost"
-    extra_parameters: |
-      location /nginx_status {
-          stub_status on;
-          access_log off;
-          allow 127.0.0.1;
-          deny all;
-      }
+db_name: "devops_quotes"
+db_user: "devops_api"
+db_password: "devops_api_password"
+db_host: "127.0.0.1"
+db_port: 5432
 
-nginx_vhosts: "{{ nginx_vhosts_base }}"
+nginx_site_name: "{{ app_name }}"
+nginx_server_name: "_"
+nginx_client_max_body_size: "10m"

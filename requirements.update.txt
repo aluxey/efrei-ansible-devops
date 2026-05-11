@@ -1,6 +1,6 @@
-ansible<12
+ansible>=13,<14
 ansible-compat
-ansible-core
+ansible-core>=2.20,<2.21
 ansible-lint
 flake8
 molecule==25.*

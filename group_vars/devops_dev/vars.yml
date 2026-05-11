@@ -1,3 +1,4 @@
 ---
 
-# Configuration spécifique au host de Dev
+# Configuration specifique a l'hote de dev utilise par Molecule
+app_gunicorn_workers: 1

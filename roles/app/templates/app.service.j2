@@ -1,0 +1,17 @@
+[Unit]
+Description={{ project_name }}
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_group }}
+WorkingDirectory={{ app_src_dir }}
+EnvironmentFile={{ app_config_dir }}/{{ app_name }}.env
+ExecStart={{ app_venv_dir }}/bin/gunicorn --workers {{ app_gunicorn_workers }} --bind {{ app_bind_host }}:{{ app_port }} --access-logfile - --error-logfile - app:app
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
