@@ -1,0 +1,4 @@
+---
+
+db_password: "devops_api_password" # push sur git pour le test mais à ne pas push en situation réelle
+#db_password: "wrong_api_password"

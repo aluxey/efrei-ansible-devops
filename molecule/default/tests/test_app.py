@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 import testinfra.utils.ansible_runner
 
@@ -7,7 +8,6 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
     os.environ['MOLECULE_INVENTORY_FILE']).get_hosts('all')
 
 APP_SERVICE = "devops_quote_api"
-APP_DATABASE = "devops_quotes"
 
 
 def fetch_json(host, url):
@@ -48,20 +48,22 @@ def test_health_endpoint_through_nginx(host):
     response = fetch_json(host, "http://127.0.0.1/health")
     assert response["status"] == "ok"
     assert response["service"] == APP_SERVICE
-
-
-def test_database_health_endpoint(host):
-    response = fetch_json(host, "http://127.0.0.1/db-health")
-    assert response["status"] == "ok"
     assert response["database"] == "postgresql"
     assert response["result"] == 1
 
 
-def test_application_database_exists(host):
+def test_postgresql_connection_with_vault_password(host):
+    vault_file = Path(__file__).resolve().parents[3] / "group_vars" / "devops_dev" / "vault.yml"
+    db_password = None
+    for line in vault_file.read_text(encoding="utf-8").splitlines():
+        if line.strip().startswith("db_password:"):
+            db_password = line.split(":", 1)[1].strip().strip('"').strip("'")
+            break
+    assert db_password is not None
+
     command = (
-        "sudo -u postgres psql -tAc "
-        f"\"SELECT datname FROM pg_database WHERE datname = '{APP_DATABASE}'\""
-    )
+        "PGPASSWORD='{password}' psql -h 127.0.0.1 -U devops_api "
+        "-d devops_quotes -c '\\q'"
+    ).format(password=db_password)
     result = host.run(command)
     assert result.rc == 0
-    assert result.stdout.strip() == APP_DATABASE

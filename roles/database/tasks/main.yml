@@ -1,9 +1,29 @@
 ---
 
+- name: Stop background apt services that can lock dpkg during Molecule runs
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+    masked: true
+  loop:
+    - apt-daily.service
+    - apt-daily.timer
+    - apt-daily-upgrade.service
+    - apt-daily-upgrade.timer
+    - unattended-upgrades.service
+
+- name: Stop lingering unattended-upgrade process if present
+  ansible.builtin.command: pkill -f unattended-upgrade
+  register: unattended_kill
+  changed_when: unattended_kill.rc == 0
+  failed_when: unattended_kill.rc not in [0, 1]
+
 - name: Install PostgreSQL packages
   ansible.builtin.apt:
     name: "{{ database_packages }}"
     state: present
+    lock_timeout: 600
     update_cache: true
     cache_valid_time: 3600
 

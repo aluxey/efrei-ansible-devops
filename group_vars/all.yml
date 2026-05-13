@@ -20,7 +20,6 @@ app_quote_seed: "Infrastructure as code, livree proprement."
 
 db_name: "devops_quotes"
 db_user: "devops_api"
-db_password: "devops_api_password"
 db_host: "127.0.0.1"
 db_port: 5432
 

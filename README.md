@@ -65,6 +65,8 @@ source venv.sh
 ```
 
 Le script gere maintenant aussi les chemins avec espaces et retombe sur `python3 -m venv` si `virtualenv` n'est pas installe.
+Pour activer Vault au chargement du projet, ajoute `group_vars/devops_dev/vault.yml` (valeurs secretes) et `.devops_vault_pass.txt` (mot de passe Vault local, ignore par git).
+Le fichier `ansible.cfg` charge automatiquement ce mot de passe via `vault_password_file`.
 
 ### 2. Installer les roles et collections Galaxy
 
